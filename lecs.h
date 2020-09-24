@@ -46,6 +46,8 @@
 // TODOs:
 // - Assert when components or entities do not exist instead of using pointers and returning nullptr
 // - Fix TODOs across the code.
+// - In the ComponentArray there is no invocation of the Component destructor when remove_data is invoked.
+// - - A fix would be to make a byte array of the size MAX_ENTITIES * sizeof(T) and use placement new when creating the component. Calling a destructor explicitely will fix the destructor issue.
 
 #pragma once
 
