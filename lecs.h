@@ -98,14 +98,14 @@ namespace lecs {
 	// Entity is a combination of index and generation
 	// EntityGeneration (32bits) | EntityIndex (32bits) = Entity (64Bits)
 	//using Entity = uint64_t; // TODO: currently this is not ok, as in create_entity we use the vector's size (size t) which can result into a narrowing conversion. 
-	
+
 	struct Entity
 	{
 		static const EntityIndex INVALID_INDEX = -1;
 
 		using IDType = uint64_t;
 		IDType id;
-		
+
 		Entity() : id{ Invalid.id } {}
 
 		Entity(EntityIndex index, EntityGeneration generation) {
@@ -135,7 +135,7 @@ namespace lecs {
 	const Entity Entity::Invalid = { Entity::INVALID_INDEX, 0 };
 
 	using ComponentMask = std::bitset<MAX_COMPONENTS>;
-	
+
 	class IComponentArray {
 	public:
 		virtual ~IComponentArray() = default;
@@ -223,7 +223,7 @@ namespace lecs {
 		void remove_entity(Entity entity) {
 			if (is_entity_handle_active(entity)) {
 				for (auto& component_array : m_components) {
-					if(component_array) component_array->on_entity_removed(entity.get_index());
+					if (component_array) component_array->on_entity_removed(entity.get_index());
 				}
 
 				m_entities.remove_entity(entity);
@@ -233,13 +233,13 @@ namespace lecs {
 		// Returns true if succeded. False, if the entity already had this component, or if the entity passed was invalid.
 		template <typename T>
 		bool add_component_to_entity(Entity entity) {
-			auto component_id = ComponentID::get<T>();	
-			
+			auto component_id = ComponentID::get<T>();
+
 			const EntityIndex entity_index = entity.get_index();
 			if (!is_entity_handle_active(entity) || m_entities.get_component_mask(entity_index).test(component_id)) {
 				return false;
 			}
-			
+
 			auto& component_array = get_component_array<T>(component_id);
 			component_array.insert_data_default_initialized(entity_index);
 			m_entities.get_component_mask(entity_index).set(component_id, true);
@@ -282,7 +282,7 @@ namespace lecs {
 			{
 				return nullptr;
 			}
-			
+
 			auto& component_array = get_component_array<T>();
 			return &component_array.get_data(entity.get_index());
 		}
@@ -349,20 +349,21 @@ namespace lecs {
 
 		void insert_data(EntityIndex entity_index, T component) {
 			auto new_index = assign_new_index(entity_index);
-			m_component_array[new_index] = component;
+			T* new_component = new (&m_component_array[new_index]) T{ component };
 		}
 
 		// prefer this, as it doesn't copy data around. 
 		// then use get_data to modify the data.
 		void insert_data_default_initialized(EntityIndex entity_index) {
 			auto new_index = assign_new_index(entity_index);
-			m_component_array[new_index] = T{};
+			T* new_component = new (&m_component_array[new_index]) T{};
 		}
 
 		void remove_data(EntityIndex entity_index) {
 			// Copy the last element of the array into the removed component's place. This keeps the array compact.
 			ComponentArraySizeType index_of_removed_entity = m_entity_to_index_map[entity_index];
 			ComponentArraySizeType index_of_last_element = m_size - 1;
+			static_cast<T*>(&m_component_array[index_of_removed_entity])->~T(); // explicitly call destructor
 			m_component_array[index_of_removed_entity] = m_component_array[index_of_last_element];
 
 			// Update the indices for the maps
@@ -392,9 +393,9 @@ namespace lecs {
 		}
 
 	private:
-		using ComponentArrayType = std::array<T, MAX_COMPONENTS>;
+		using ComponentArrayType = std::array<T, MAX_ENTITIES>;
 		using ComponentArraySizeType = typename ComponentArrayType::size_type;
-		
+
 		ComponentArraySizeType assign_new_index(EntityIndex entity_index) {
 			ComponentArraySizeType new_index = m_size;
 			m_entity_to_index_map[entity_index] = new_index;
@@ -466,7 +467,7 @@ namespace lecs {
 
 		const Iterator begin() const {
 			auto first_index = 0;
-			while (first_index < m_ecs.get_entity_count() &&
+			while (	first_index < m_ecs.get_entity_count() &&
 					m_component_mask != (m_component_mask & m_ecs.get_component_mask_from_index(first_index))) {
 				first_index++;
 			}
