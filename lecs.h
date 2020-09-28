@@ -230,7 +230,7 @@ namespace lecs {
 			}
 		}
 
-		// Returns true if succeded. False, if the entity already had this component, or if the entity passed was invalid.
+		// Returns true if succeeded. False, if the entity already had this component, or if the entity passed was invalid.
 		template <typename T>
 		bool add_component_to_entity(Entity entity) {
 			auto component_id = ComponentID::get<T>();
@@ -247,7 +247,7 @@ namespace lecs {
 			return true;
 		}
 
-		// Returns true if succeded. False, if the entity didn't have this component or the entity is invalid.
+		// Returns true if succeeded. False, if the entity didn't have this component or the entity is invalid.
 		template <typename T>
 		bool remove_component_from_entity(Entity entity) {
 			auto component_id = ComponentID::get<T>();
