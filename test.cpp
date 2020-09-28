@@ -21,7 +21,7 @@ struct TransformComponent {
 		std::cout << "called TransformComponent() Copy Ctr" << std::endl;
 	}
 
-	TransformComponent(TransformComponent&& other) {
+	TransformComponent(TransformComponent&& other) noexcept {
 		for (int i = 0; i < 3; i++) {
 			position[i] = other.position[i];
 			rotation[i] = other.rotation[i];

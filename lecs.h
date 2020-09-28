@@ -348,29 +348,29 @@ namespace lecs {
 		ComponentArray() : m_component_array(), m_size(0) {}
 		~ComponentArray() {
 			for(auto i = 0; i < m_size; ++i){
-				get_data_from_component_index(i).~T(); // explicitly call destructor
+				destroy_at_index(i); // explicitly call destructor
 			}
 		}
 
 		void insert_data(EntityIndex entity_index, T component) {
 			auto new_index = assign_new_index(entity_index);
-			T* new_component = new (&m_component_array[new_index].bytes[0]) T{ component };
+			T* new_component = construct_at_index(new_index,  std::forward<T>(component));
 		}
 
 		// prefer this, as it doesn't copy data around. 
 		// then use get_data_from_entity_index to modify the data.
 		void insert_data_default_initialized(EntityIndex entity_index) {
 			auto new_index = assign_new_index(entity_index);
-			T* new_component = new (&(m_component_array[new_index].bytes[0])) T{};
+			T* new_component = construct_at_index(new_index);
 		}
 
 		void remove_data(EntityIndex entity_index) {
 			// Copy the last element of the array into the removed component's place. This keeps the array compact.
 			ComponentArraySizeType index_of_removed_entity = m_entity_to_index_map[entity_index];
 			ComponentArraySizeType index_of_last_element = m_size - 1;
-			get_data_from_component_index(index_of_removed_entity).~T(); // explicitly call destructor
-			T* move_component = new (&m_component_array[index_of_removed_entity].bytes[0]) T( std::forward<T>(get_data_from_component_index(index_of_last_element)) );
-			get_data_from_component_index(index_of_last_element).~T(); // explicitly call destructor
+			destroy_at_index(index_of_removed_entity); // explicitly call destructor
+			construct_at_index(index_of_removed_entity, std::forward<T>(get_data_from_component_index(index_of_last_element)));
+			destroy_at_index(index_of_last_element); // explicitly call destructor
 
 			// Update the indices for the maps
 			EntityIndex entity_index_of_last_element = m_index_to_entity_map[index_of_last_element];
@@ -420,6 +420,18 @@ namespace lecs {
 			auto& bytes = m_component_array[component_index].bytes;
 			T* component = reinterpret_cast<T*>(&bytes[0]);
 			return *component;
+		}
+
+		T* construct_at_index(ComponentArraySizeType component_index) {
+			return new (&m_component_array[component_index].bytes[0]) T{};
+		}
+
+		T* construct_at_index(ComponentArraySizeType component_index, T&& other) {
+			return new (&m_component_array[component_index].bytes[0]) T(std::forward<T>(other));
+		}
+
+		void destroy_at_index(ComponentArraySizeType component_index) {
+			get_data_from_component_index(component_index).~T();
 		}
 
 		ComponentArrayType m_component_array;
