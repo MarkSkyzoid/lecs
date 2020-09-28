@@ -15,17 +15,24 @@ Lightweight Entity Component System
  lecs::Entity entity = my_ecs.create_entity();
 
  You can assign (or remove) components to entities like this:
+ ```cpp
  my_ecs.add_component_to_entity<Transform>(entity);
+ ```
  or
+ ```cpp
  my_ecs.remove_component_from_entity<Transform>(entity);
+```
 
  You can retrieve component data like this:
+ ```cpp
  auto component_data = ecs.get_component<Transform>(entity);
  component_data->position[0] = 1.0f;
+ ```
  If there is no component data associated to that entity, the function will return nullptr.
  You can also check if an entity has a component:
+ ```cpp
  bool has_transform = ecs.has_component<Transform>(entity));
-
+```
  Systems are just free functions or callable objects, you can choose:
  void velocity_system_update(lecs::ECS& ecs_instance, float delta_time) {
 		for (lecs::Entity entity : lecs::EntityIterator<Transform, Velocity>(ecs_instance)) {
