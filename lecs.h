@@ -354,7 +354,7 @@ namespace lecs {
 
 		void insert_data(EntityIndex entity_index, T component) {
 			auto new_index = assign_new_index(entity_index);
-			T* new_component = construct_at_index(new_index,  std::forward<T>(component));
+			T* new_component = construct_at_index(new_index,  std::move(component));
 		}
 
 		// prefer this, as it doesn't copy data around. 
@@ -369,7 +369,7 @@ namespace lecs {
 			ComponentArraySizeType index_of_removed_entity = m_entity_to_index_map[entity_index];
 			ComponentArraySizeType index_of_last_element = m_size - 1;
 			destroy_at_index(index_of_removed_entity); // explicitly call destructor
-			construct_at_index(index_of_removed_entity, std::forward<T>(get_data_from_component_index(index_of_last_element)));
+			construct_at_index(index_of_removed_entity, std::move(get_data_from_component_index(index_of_last_element)));
 			destroy_at_index(index_of_last_element); // explicitly call destructor
 
 			// Update the indices for the maps
@@ -427,7 +427,7 @@ namespace lecs {
 		}
 
 		T* construct_at_index(ComponentArraySizeType component_index, T&& other) {
-			return new (&m_component_array[component_index].bytes[0]) T(std::forward<T>(other));
+			return new (&m_component_array[component_index].bytes[0]) T(std::move(other));
 		}
 
 		void destroy_at_index(ComponentArraySizeType component_index) {
