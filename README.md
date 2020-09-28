@@ -5,11 +5,11 @@ Lightweight Entity Component System
  USAGE:
  Components are simple structs eg.:
 ```cpp
-	struct Transform {
-		float position[3];
-		float rotation[3];
-		float scale[3];
-	};
+struct Transform {
+	float position[3];
+	float rotation[3];
+	float scale[3];
+};
 ```
  You can create new entities from an ECS object:
  ```cpp
