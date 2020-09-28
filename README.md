@@ -4,7 +4,7 @@ Lightweight Entity Component System
 
  USAGE:
  Components are simple structs eg.:
-	```cpp
+```cpp
 	struct Transform {
 		float position[3];
 		float rotation[3];
