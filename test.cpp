@@ -5,6 +5,30 @@
 struct TransformComponent {
 	float position[3];
 	float rotation[3];
+
+	TransformComponent() = default;
+
+	~TransformComponent() {
+		std::cout << "called ~TransformComponent()" << std::endl;
+	}
+
+	TransformComponent(const TransformComponent& other) {
+		for (int i = 0; i < 3; i++) {
+			position[i] = other.position[i];
+			rotation[i] = other.rotation[i];
+		}
+
+		std::cout << "called TransformComponent() Copy Ctr" << std::endl;
+	}
+
+	TransformComponent(TransformComponent&& other) {
+		for (int i = 0; i < 3; i++) {
+			position[i] = other.position[i];
+			rotation[i] = other.rotation[i];
+		}
+
+		std::cout << "called TransformComponent() Move Ctr" << std::endl;
+	}
 };
 
 struct VelocityComponent {
@@ -70,9 +94,9 @@ int main() {
 	auto tc = ecs.get_component<TransformComponent>(ent);
 	tc->position[0] = tc->position[1] = tc->position[2] = 1.0f;
 
+	ecs.remove_component_from_entity<TransformComponent>(ent);
 	test_system_update(ecs);
 
-	ecs.remove_component_from_entity<TransformComponent>(ent);
 
 	return 0;
 }

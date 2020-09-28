@@ -284,7 +284,7 @@ namespace lecs {
 			}
 
 			auto& component_array = get_component_array<T>();
-			return &component_array.get_data(entity.get_index());
+			return &component_array.get_data_from_entity_index(entity.get_index());
 		}
 
 		// Unsafe as it doesn't check if the entity is valid.
@@ -345,26 +345,32 @@ namespace lecs {
 	template <typename T>
 	class ComponentArray : public IComponentArray {
 	public:
-		ComponentArray() : m_size(0) {}
+		ComponentArray() : m_component_array(), m_size(0) {}
+		~ComponentArray() {
+			for(auto i = 0; i < m_size; ++i){
+				get_data_from_component_index(i).~T(); // explicitly call destructor
+			}
+		}
 
 		void insert_data(EntityIndex entity_index, T component) {
 			auto new_index = assign_new_index(entity_index);
-			T* new_component = new (&m_component_array[new_index]) T{ component };
+			T* new_component = new (&m_component_array[new_index].bytes[0]) T{ component };
 		}
 
 		// prefer this, as it doesn't copy data around. 
-		// then use get_data to modify the data.
+		// then use get_data_from_entity_index to modify the data.
 		void insert_data_default_initialized(EntityIndex entity_index) {
 			auto new_index = assign_new_index(entity_index);
-			T* new_component = new (&m_component_array[new_index]) T{};
+			T* new_component = new (&(m_component_array[new_index].bytes[0])) T{};
 		}
 
 		void remove_data(EntityIndex entity_index) {
 			// Copy the last element of the array into the removed component's place. This keeps the array compact.
 			ComponentArraySizeType index_of_removed_entity = m_entity_to_index_map[entity_index];
 			ComponentArraySizeType index_of_last_element = m_size - 1;
-			static_cast<T*>(&m_component_array[index_of_removed_entity])->~T(); // explicitly call destructor
-			m_component_array[index_of_removed_entity] = m_component_array[index_of_last_element];
+			get_data_from_component_index(index_of_removed_entity).~T(); // explicitly call destructor
+			T* move_component = new (&m_component_array[index_of_removed_entity].bytes[0]) T( std::forward<T>(get_data_from_component_index(index_of_last_element)) );
+			get_data_from_component_index(index_of_last_element).~T(); // explicitly call destructor
 
 			// Update the indices for the maps
 			EntityIndex entity_index_of_last_element = m_index_to_entity_map[index_of_last_element];
@@ -382,8 +388,8 @@ namespace lecs {
 			return m_entity_to_index_map.find(entity_index) != m_entity_to_index_map.end();
 		}
 
-		T& get_data(EntityIndex entity_index) {
-			return m_component_array[m_entity_to_index_map[entity_index]];
+		T& get_data_from_entity_index(EntityIndex entity_index) {
+			return get_data_from_component_index(m_entity_to_index_map[entity_index]);
 		}
 
 		virtual void on_entity_removed(EntityIndex entity_index) override {
@@ -393,7 +399,11 @@ namespace lecs {
 		}
 
 	private:
-		using ComponentArrayType = std::array<T, MAX_ENTITIES>;
+		struct alignas(T) ComponentAsBytesBuffer {
+			char bytes[sizeof(T)];
+		};
+
+		using ComponentArrayType = std::array<ComponentAsBytesBuffer, MAX_ENTITIES>;
 		using ComponentArraySizeType = typename ComponentArrayType::size_type;
 
 		ComponentArraySizeType assign_new_index(EntityIndex entity_index) {
@@ -404,6 +414,12 @@ namespace lecs {
 			m_size++;
 
 			return new_index;
+		}
+
+		T& get_data_from_component_index(ComponentArraySizeType component_index) {
+			auto& bytes = m_component_array[component_index].bytes;
+			T* component = reinterpret_cast<T*>(&bytes[0]);
+			return *component;
 		}
 
 		ComponentArrayType m_component_array;
