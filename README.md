@@ -1,6 +1,7 @@
 # lecs
 Lightweight Entity Component System
 
+Also check [Leviathan (Lightweight Event System)](https://github.com/MarkSkyzoid/leviathan)!
 
  USAGE:
  Components are simple structs eg.:
