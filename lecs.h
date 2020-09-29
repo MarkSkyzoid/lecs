@@ -55,7 +55,6 @@
 #include <bitset>
 #include <cstdint>
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 // Config
@@ -366,7 +365,7 @@ namespace lecs {
 
 		void remove_data(EntityIndex entity_index) {
 			// Copy the last element of the array into the removed component's place. This keeps the array compact.
-			ComponentArraySizeType index_of_removed_entity = m_entity_to_index_map[entity_index];
+			ComponentArraySizeType index_of_removed_entity = m_entity_to_index_map[entity_index].index;
 			ComponentArraySizeType index_of_last_element = m_size - 1;
 			destroy_at_index(index_of_removed_entity); // explicitly call destructor
 			construct_at_index(index_of_removed_entity, std::move(get_data_from_component_index(index_of_last_element)));
@@ -374,22 +373,22 @@ namespace lecs {
 
 			// Update the indices for the maps
 			EntityIndex entity_index_of_last_element = m_index_to_entity_map[index_of_last_element];
-			m_entity_to_index_map[entity_index_of_last_element] = index_of_removed_entity;
+			m_entity_to_index_map[entity_index_of_last_element].index = index_of_removed_entity;
 			m_index_to_entity_map[index_of_removed_entity] = entity_index_of_last_element;
 
 			// Remove deprecated entries
-			m_entity_to_index_map.erase(entity_index);
-			m_index_to_entity_map.erase(index_of_last_element);
+			m_entity_to_index_map[entity_index].index = ComponentIndex::INVALID_INDEX;
+			m_index_to_entity_map[index_of_last_element] = Entity::INVALID_INDEX;
 
 			--m_size;
 		}
 
 		bool has_data(EntityIndex entity_index) {
-			return m_entity_to_index_map.find(entity_index) != m_entity_to_index_map.end();
+			return m_entity_to_index_map[entity_index].index != ComponentIndex::INVALID_INDEX;
 		}
 
 		T& get_data_from_entity_index(EntityIndex entity_index) {
-			return get_data_from_component_index(m_entity_to_index_map[entity_index]);
+			return get_data_from_component_index(m_entity_to_index_map[entity_index].index);
 		}
 
 		virtual void on_entity_removed(EntityIndex entity_index) override {
@@ -406,9 +405,16 @@ namespace lecs {
 		using ComponentArrayType = std::array<ComponentAsBytesBuffer, MAX_ENTITIES>;
 		using ComponentArraySizeType = typename ComponentArrayType::size_type;
 
+		struct ComponentIndex {	
+			static const ComponentArraySizeType INVALID_INDEX = -1;
+			ComponentArraySizeType index;
+
+			ComponentIndex() : index(INVALID_INDEX) {}
+		};
+
 		ComponentArraySizeType assign_new_index(EntityIndex entity_index) {
 			ComponentArraySizeType new_index = m_size;
-			m_entity_to_index_map[entity_index] = new_index;
+			m_entity_to_index_map[entity_index].index = new_index;
 			m_index_to_entity_map[new_index] = entity_index;
 
 			m_size++;
@@ -435,8 +441,9 @@ namespace lecs {
 		}
 
 		ComponentArrayType m_component_array;
-		std::unordered_map<EntityIndex, ComponentArraySizeType> m_entity_to_index_map;
-		std::unordered_map<ComponentArraySizeType, EntityIndex> m_index_to_entity_map;
+
+		std::array<ComponentIndex, MAX_ENTITIES> m_entity_to_index_map;
+		std::array<EntityIndex, MAX_ENTITIES> m_index_to_entity_map;
 
 		ComponentArraySizeType m_size;
 	};

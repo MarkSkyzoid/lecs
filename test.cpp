@@ -1,5 +1,8 @@
+#include <chrono>
 #include <iostream>
 
+constexpr size_t _10M = 10'000'000L;
+#define LECS_MAX_ENTITIES _10M
 #include "lecs.h"
 
 struct TransformComponent {
@@ -68,35 +71,69 @@ void test_entity_creation(lecs::ECS& ecs) {
 	ecs.remove_entity(e1);
 }
 
+std::vector<lecs::Entity> g_entities;
+std::unique_ptr<lecs::ECS> test_entity_destruction_times(std::unique_ptr<lecs::ECS> ecs) {
+	constexpr size_t num_entities = _10M;
+	using namespace std::chrono;
+	high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	for (auto i = 0; i < num_entities; i++) {
+		ecs->remove_entity(g_entities[i]);
+	}
+	high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+	std::cout << "test_entity_destruction_times took " << time_span.count() << " seconds with " << num_entities << " entities\n";
+
+	return std::move(ecs);
+}
+
+std::unique_ptr<lecs::ECS> test_entity_creation_times(std::unique_ptr<lecs::ECS> ecs) {
+	constexpr size_t num_entities = _10M;
+	g_entities.resize(num_entities);
+	using namespace std::chrono;
+	high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	for (auto i = 0; i < num_entities; i++) {
+		g_entities[i] = ecs->create_entity();
+	}
+	high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+	std::cout << "test_entity_creation_times took " << time_span.count() << " seconds with " << num_entities << " entities\n";
+
+	return std::move(ecs);
+}
+
 
 int main() {
 	std::cout << "Welcome to LECS" << std::endl;
 	std::cout << "TransformComponent ID: " << lecs::ComponentID::get<TransformComponent>() << std::endl;
 	std::cout << "VelocityComponent ID: " << lecs::ComponentID::get<VelocityComponent>() << std::endl;
 
+	std::unique_ptr<lecs::ECS> ecs = std::make_unique<lecs::ECS>();
 
-	lecs::ECS ecs;
-	test_entity_creation(ecs);
-	lecs::Entity ent = ecs.create_entity();
-	ecs.add_component_to_entity<TransformComponent>(ent);
-	ecs.add_component_to_entity<VelocityComponent>(ent);
+	ecs = test_entity_creation_times(std::move(ecs));
+	ecs = test_entity_destruction_times(std::move(ecs));
 
-	lecs::Entity ent2 = ecs.create_entity();
-	ecs.add_component_to_entity<TransformComponent>(ent2);
+	test_entity_creation(*ecs);
+	lecs::Entity ent = ecs->create_entity();
+	ecs->add_component_to_entity<TransformComponent>(ent);
+	ecs->add_component_to_entity<VelocityComponent>(ent);
 
-	lecs::Entity ent3 = ecs.create_entity();
-	ecs.add_component_to_entity<TransformComponent>(ent3);
+	lecs::Entity ent2 = ecs->create_entity();
+	ecs->add_component_to_entity<TransformComponent>(ent2);
+
+	lecs::Entity ent3 = ecs->create_entity();
+	ecs->add_component_to_entity<TransformComponent>(ent3);
 	
-	lecs::Entity ent4 = ecs.create_entity();
-	ecs.add_component_to_entity<VelocityComponent>(ent4);
-	ecs.add_component_to_entity<TransformComponent>(ent4);
+	lecs::Entity ent4 = ecs->create_entity();
+	ecs->add_component_to_entity<VelocityComponent>(ent4);
+	ecs->add_component_to_entity<TransformComponent>(ent4);
 
-	auto tc = ecs.get_component<TransformComponent>(ent);
+	ecs->remove_component_from_entity<TransformComponent>(ent);
+	
+	auto tc = ecs->get_component<TransformComponent>(ent4);
 	tc->position[0] = tc->position[1] = tc->position[2] = 1.0f;
 
-	ecs.remove_component_from_entity<TransformComponent>(ent);
-	test_system_update(ecs);
+	ecs->add_component_to_entity<TransformComponent>(ent);
 
-
+	test_system_update(*ecs);
 	return 0;
 }
