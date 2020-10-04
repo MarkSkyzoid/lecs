@@ -1,5 +1,9 @@
 // LECS (Lightweight Entity Component System)
 //
+// Written by Marco Vallario
+//
+// LICENSE: See end of file for license information
+//
 // USAGE:
 // Components are simple structs eg.:
 //	struct Transform {
@@ -107,23 +111,15 @@ namespace lecs {
 
 		Entity() : id{ Invalid.id } {}
 
-		Entity(EntityIndex index, EntityGeneration generation) {
-			id = (static_cast<IDType>(generation) << 32) | static_cast<IDType>(index);
-		}
-
 		Entity(IDType i) : id(i) {}
 
-		EntityIndex get_index() const {
-			return static_cast<EntityIndex>(id);
-		}
+		Entity(EntityIndex index, EntityGeneration generation);
 
-		EntityGeneration get_generation() const {
-			return static_cast<EntityGeneration>(id >> 32);
-		}
+		EntityIndex get_index() const;
 
-		bool is_valid() {
-			return get_index() != INVALID_INDEX;
-		}
+		EntityGeneration get_generation() const;
+
+		bool is_valid();
 
 		bool operator==(const Entity& other) const {
 			return id == other.id;
@@ -148,51 +144,15 @@ namespace lecs {
 	public:
 		EntityArray() = default;
 
-		Entity create_entity() {
-			Entity new_id = Entity::Invalid;
+		Entity create_entity();
 
-			if (m_free_indices_count > 0) {
-				EntityIndex new_index = m_free_indices[m_free_indices_count - 1];
-				EntityGeneration new_generation = m_entities[new_index].id.get_generation();
-				new_id = Entity{ new_index, new_generation };
-				m_free_indices_count--;
-			}
-			else {
-				EntityIndex new_index = static_cast<EntityIndex>(m_entities_count);
-				EntityGeneration new_generation = 0;
-				new_id = Entity{ new_index, new_generation };
-				m_entities_count++;
-			}
+		void remove_entity(Entity entity);
 
-			m_entities[new_id.get_index()] = { new_id, ComponentMask{} };
+		ComponentMask& get_component_mask(EntityIndex entity_index);
 
-			return new_id;
-		}
+		Entity get_id(EntityIndex entity_index) const;
 
-		void remove_entity(Entity entity) {
-			// Invalidate Entity handle at position and increase generation
-			EntityGeneration old_gen = entity.get_generation();
-			Entity new_id = Entity{ Entity::INVALID_INDEX, old_gen + 1 };
-			const EntityIndex entity_index = entity.get_index();
-			m_entities[entity_index].id = new_id;
-			m_entities[entity_index].mask.reset();
-
-			// Add index to free list
-			m_free_indices[m_free_indices_count] = entity.get_index();
-			m_free_indices_count++;
-		}
-
-		ComponentMask& get_component_mask(EntityIndex entity_index) {
-			return m_entities[entity_index].mask;
-		}
-
-		Entity get_id(EntityIndex entity_index) const {
-			return m_entities[entity_index].id;
-		}
-
-		int32_t get_count() const {
-			return static_cast<int32_t>(m_entities_count);
-		}
+		int32_t get_count() const;
 
 	private:
 		struct Entry {
@@ -215,100 +175,38 @@ namespace lecs {
 
 	class ECS {
 	public:
-		Entity create_entity() {
-			return m_entities.create_entity();
-		}
+		Entity create_entity();
 
-		void remove_entity(Entity entity) {
-			if (is_entity_handle_active(entity)) {
-				for (auto& component_array : m_components) {
-					if (component_array) component_array->on_entity_removed(entity.get_index());
-				}
-
-				m_entities.remove_entity(entity);
-			}
-		}
+		void remove_entity(Entity entity);
 
 		// Returns true if succeeded. False, if the entity already had this component, or if the entity passed was invalid.
 		template <typename T>
-		bool add_component_to_entity(Entity entity) {
-			auto component_id = ComponentID::get<T>();
-
-			const EntityIndex entity_index = entity.get_index();
-			if (!is_entity_handle_active(entity) || m_entities.get_component_mask(entity_index).test(component_id)) {
-				return false;
-			}
-
-			auto& component_array = get_component_array<T>(component_id);
-			component_array.insert_data_default_initialized(entity_index);
-			m_entities.get_component_mask(entity_index).set(component_id, true);
-
-			return true;
-		}
+		bool add_component_to_entity(Entity entity);
 
 		// Returns true if succeeded. False, if the entity didn't have this component or the entity is invalid.
 		template <typename T>
-		bool remove_component_from_entity(Entity entity) {
-			auto component_id = ComponentID::get<T>();
-
-			const EntityIndex entity_index = entity.get_index();
-			if (!is_entity_handle_active(entity) || m_entities.get_component_mask(entity_index).test(component_id) == false) {
-				// The entity doesn't have this component!
-				return false;
-			}
-
-			auto& component_array = get_component_array<T>(component_id);
-			component_array.remove_data(entity_index);
-			m_entities.get_component_mask(entity_index).set(component_id, false);
-
-			return true;
-		}
+		bool remove_component_from_entity(Entity entity);
 
 		template <typename T>
-		bool has_component(Entity entity) {
-			if (!is_entity_handle_active(entity)) {
-				return false;
-			}
-
-			auto component_id = ComponentID::get<T>();
-			return m_entities.get_component_mask(entity.get_index()).test(component_id);
-		}
+		bool has_component(Entity entity);
 
 		// If there is no component of this type, returns a nullptr
 		template <typename T>
-		T* get_component(Entity entity) {
-			if (!has_component<T>(entity))
-			{
-				return nullptr;
-			}
-
-			auto& component_array = get_component_array<T>();
-			return &component_array.get_data_from_entity_index(entity.get_index());
-		}
+		T* get_component(Entity entity);
 
 		// Unsafe as it doesn't check if the entity is valid.
-		ComponentMask get_component_mask_from_index(EntityIndex entity_index) {
-			return m_entities.get_component_mask(entity_index);
-		}
+		ComponentMask get_component_mask_from_index(EntityIndex entity_index);
 
 		// Safer than from index as it performs checks.
-		ComponentMask get_component_mask_from_entity(Entity entity) {
-			return is_entity_handle_active(entity) ? get_component_mask_from_index(entity.get_index()) : ComponentMask{};
-		}
+		ComponentMask get_component_mask_from_entity(Entity entity);
+
 		// TODO: use better type
-		int32_t get_entity_count() const {
-			return m_entities.get_count();
-		}
+		int32_t get_entity_count() const;
 
 		// TODO: return an std::optional if the Entity index is out of range?
-		Entity get_entity_from_index(EntityIndex entity_index) const {
-			return m_entities.get_id(entity_index);
-		}
+		Entity get_entity_from_index(EntityIndex entity_index) const;
 
-		bool is_entity_handle_active(Entity entity) const {
-			return entity.is_valid() &&
-				m_entities.get_id(entity.get_index()) == entity;
-		}
+		bool is_entity_handle_active(Entity entity) const;
 
 	private:
 		struct EntityEntry {
@@ -320,20 +218,10 @@ namespace lecs {
 
 		// Lazily initialize component arrays, so we don't waste memory if we don't need to
 		template <typename T>
-		ComponentArray<T>& get_component_array(ComponentID::IDType component_id) {
-			if (m_components[component_id] == nullptr) {
-				m_components[component_id] = std::make_unique<ComponentArray<T>>();
-			}
-
-			return *(static_cast<ComponentArray<T>*>(m_components[component_id].get()));
-		}
+		ComponentArray<T>& get_component_array_by_component_id(ComponentID::IDType component_id);
 
 		template <typename T>
-		ComponentArray<T>& get_component_array() {
-			auto component_id = ComponentID::get<T>();
-
-			return get_component_array<T>(component_id);
-		}
+		ComponentArray<T>& get_component_array();
 
 		EntityArray m_entities;
 		std::array<IComponentArrayPtr, MAX_COMPONENTS> m_components;
@@ -345,11 +233,7 @@ namespace lecs {
 	class ComponentArray : public IComponentArray {
 	public:
 		ComponentArray() : m_component_array(), m_size(0) {}
-		~ComponentArray() {
-			for(auto i = 0; i < m_size; ++i){
-				destroy_at_index(i); // explicitly call destructor
-			}
-		}
+		~ComponentArray();
 
 		void insert_data(EntityIndex entity_index, T component) {
 			auto new_index = assign_new_index(entity_index);
@@ -363,25 +247,7 @@ namespace lecs {
 			T* new_component = construct_at_index(new_index);
 		}
 
-		void remove_data(EntityIndex entity_index) {
-			// Copy the last element of the array into the removed component's place. This keeps the array compact.
-			ComponentArraySizeType index_of_removed_entity = m_entity_to_index_map[entity_index].index;
-			ComponentArraySizeType index_of_last_element = m_size - 1;
-			destroy_at_index(index_of_removed_entity); // explicitly call destructor
-			construct_at_index(index_of_removed_entity, std::move(get_data_from_component_index(index_of_last_element)));
-			destroy_at_index(index_of_last_element); // explicitly call destructor
-
-			// Update the indices for the maps
-			EntityIndex entity_index_of_last_element = m_index_to_entity_map[index_of_last_element];
-			m_entity_to_index_map[entity_index_of_last_element].index = index_of_removed_entity;
-			m_index_to_entity_map[index_of_removed_entity] = entity_index_of_last_element;
-
-			// Remove deprecated entries
-			m_entity_to_index_map[entity_index].index = ComponentIndex::INVALID_INDEX;
-			m_index_to_entity_map[index_of_last_element] = Entity::INVALID_INDEX;
-
-			--m_size;
-		}
+		void remove_data(EntityIndex entity_index);
 
 		bool has_data(EntityIndex entity_index) {
 			return m_entity_to_index_map[entity_index].index != ComponentIndex::INVALID_INDEX;
@@ -412,21 +278,9 @@ namespace lecs {
 			ComponentIndex() : index(INVALID_INDEX) {}
 		};
 
-		ComponentArraySizeType assign_new_index(EntityIndex entity_index) {
-			ComponentArraySizeType new_index = m_size;
-			m_entity_to_index_map[entity_index].index = new_index;
-			m_index_to_entity_map[new_index] = entity_index;
+		ComponentArraySizeType assign_new_index(EntityIndex entity_index);
 
-			m_size++;
-
-			return new_index;
-		}
-
-		T& get_data_from_component_index(ComponentArraySizeType component_index) {
-			auto& bytes = m_component_array[component_index].bytes;
-			T* component = reinterpret_cast<T*>(&bytes[0]);
-			return *component;
-		}
+		T& get_data_from_component_index(ComponentArraySizeType component_index);
 
 		T* construct_at_index(ComponentArraySizeType component_index) {
 			return new (&m_component_array[component_index].bytes[0]) T{};
@@ -449,7 +303,7 @@ namespace lecs {
 	};
 
 	// This is an iterator that lets you iterate through entities matching a particular ComponentMask.
-	// If you don't specity any template Component Types then it will iterate over all of the entities.
+	// If you don't specify any template Component Types then it will iterate over all of the entities.
 	template <typename... ComponentTypes>
 	class EntityIterator {
 	public:
@@ -520,3 +374,28 @@ namespace lecs {
 		bool m_all{ false };
 	};
 }
+
+// Inline definitions file
+#include "lecs.inl"
+
+//MIT License
+//
+//Copyright(c) 2020 Marco Vallario
+//
+//Permission is hereby granted, free of charge, to any person obtaining a copy
+//of this software and associated documentation files(the "Software"), to deal
+//in the Software without restriction, including without limitation the rights
+//to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
+//copies of the Software, and to permit persons to whom the Software is
+//furnished to do so, subject to the following conditions :
+//
+//The above copyright notice and this permission notice shall be included in all
+//copies or substantial portions of the Software.
+//
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//SOFTWARE.
