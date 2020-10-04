@@ -56,11 +56,11 @@ struct Transform {
  Systems are just free functions or callable objects, you can choose:
 ```cpp
  void velocity_system_update(lecs::ECS& ecs_instance, float delta_time) {
-		for (lecs::Entity entity : lecs::EntityIterator<Transform, Velocity>(ecs_instance)) {
-			Transform& transform_component = ecs_instance.get_component<Transform>(entity);
-			Velocity& velocity_component = ecs_instance.get_component<Velocity>(entity);
-			 ... do your things ...
-		}
+	for (lecs::Entity entity : lecs::EntityIterator<Transform, Velocity>(ecs_instance)) {
+		Transform& transform_component = ecs_instance.get_component<Transform>(entity);
+		Velocity& velocity_component = ecs_instance.get_component<Velocity>(entity);
+		// ... do your things ...
+	}
  }
 ```
  Then you can call system updates from wherever you like, usually your main loop, but this gives you flexibility to how you organize your update:
