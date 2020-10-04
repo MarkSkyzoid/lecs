@@ -72,7 +72,6 @@
 #endif // LECS_MAX_ENTITIES
 
 namespace lecs {
-
 	// Provides an unique ID for components eg.:
 	// int32_t transform_id = ComponentID::get<Transform>();
 	// TODO: add a TAG to this, so we can have multiple ones for different ECSs (eg. template <int TAG> struct ComponentID ...)

@@ -1,13 +1,23 @@
 # LECS
 LECS (Lightweight Entity Component System) is a simple, lightweight and header only C++ library to add ECS (Entity Component System) to your game or your project.
 
+### Features
+- Entities are just lookup IDs
+- EntityIDs have a version so that you don't need to worry about dangling handles
+- Any type can be a component
+- No inheritance for defining components nor systems
+- No RTTI
+- Any function or callable type can be a system
+- Call systems from wherever you want in any order you like!
+
+## 
 Also check [Leviathan (Lightweight Event System)](https://github.com/MarkSkyzoid/leviathan)!
 
 ## Installation
 You can download the whole repo and copy the contents of the 'lecs' folder into your project's include directories. <br>
 Then you can include lecs into your project:
 ```cpp
-#include "lecs/lecs.h"
+#include <lecs/lecs.hpp>
 ```
 
 ## Usage
