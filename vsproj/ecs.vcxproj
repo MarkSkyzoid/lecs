@@ -19,13 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\lecs.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\test.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\lecs.inl" />
+    <ClInclude Include="..\lecs\lecs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\lecs\lecs.inl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
