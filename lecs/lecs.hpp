@@ -306,7 +306,7 @@ namespace lecs {
 	template <typename... ComponentTypes>
 	class EntityIterator {
 	public:
-		EntityIterator(ECS& ecs) : m_ecs(ecs) {
+		EntityIterator(ECS& ecs) : m_ecs(ecs), m_entity_count(ecs.get_entity_count()) {
 			if (sizeof...(ComponentTypes) == 0) {
 				m_all = true;
 			}
@@ -319,24 +319,24 @@ namespace lecs {
 		}
 
 		struct Iterator {
-			Iterator(ECS& ecs, EntityIndex entity_index, ComponentMask mask, bool all) : m_ecs(ecs), m_entity_index(entity_index), m_mask(mask), m_all(all) {}
+			Iterator(ECS& ecs, EntityIndex entity_index, ComponentMask mask, bool all) : m_ecs(ecs), m_entity_count(m_ecs.get_entity_count()), m_entity_index(entity_index), m_mask(mask), m_all(all) {}
 
 			Entity operator*() const {
 				return m_ecs.get_entity_from_index(m_entity_index);;
 			}
 
 			bool operator==(const Iterator& other) const {
-				return m_entity_index == other.m_entity_index || m_entity_index == m_ecs.get_entity_count();
+				return m_entity_index == other.m_entity_index || m_entity_index == m_entity_count;
 			}
 
 			bool operator!=(const Iterator& other) const {
-				return m_entity_index != other.m_entity_index || m_entity_index != m_ecs.get_entity_count();
+				return m_entity_index != other.m_entity_index || m_entity_index != m_entity_count;
 			}
 
 			Iterator& operator++() {
 				do {
 					m_entity_index++;
-				} while (m_entity_index < m_ecs.get_entity_count() && !valid_index(m_entity_index));
+				} while (m_entity_index < m_entity_count && !valid_index(m_entity_index));
 
 				return *this;
 			}
@@ -348,6 +348,7 @@ namespace lecs {
 			}
 
 			ECS& m_ecs;
+			int32_t m_entity_count;
 			EntityIndex m_entity_index;
 			ComponentMask m_mask;
 			bool m_all{ false };
@@ -355,7 +356,7 @@ namespace lecs {
 
 		const Iterator begin() const {
 			auto first_index = 0;
-			while (	first_index < m_ecs.get_entity_count() &&
+			while (first_index < m_entity_count &&
 					m_component_mask != (m_component_mask & m_ecs.get_component_mask_from_index(first_index))) {
 				first_index++;
 			}
@@ -364,11 +365,12 @@ namespace lecs {
 		}
 
 		const Iterator end() const {
-			return Iterator(m_ecs, EntityIndex(m_ecs.get_entity_count()), m_component_mask, m_all);
+			return Iterator(m_ecs, EntityIndex(m_entity_count), m_component_mask, m_all);
 		}
 
 	private:
 		ECS& m_ecs;
+		int32_t m_entity_count;
 		ComponentMask m_component_mask;
 		bool m_all{ false };
 	};
