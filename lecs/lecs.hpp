@@ -319,7 +319,7 @@ namespace lecs {
 		}
 
 		struct Iterator {
-			Iterator(ECS& ecs, EntityIndex entity_index, ComponentMask mask, bool all) : m_ecs(ecs), m_entity_count(m_ecs.get_entity_count()), m_entity_index(entity_index), m_mask(mask), m_all(all) {}
+			Iterator(ECS& ecs, EntityIndex entity_index, ComponentMask mask, bool all) : m_ecs(ecs), m_entity_count(static_cast<uint32_t>(ecs.get_entity_count())), m_entity_index(entity_index), m_mask(mask), m_all(all) {}
 
 			Entity operator*() const {
 				return m_ecs.get_entity_from_index(m_entity_index);;
@@ -348,7 +348,7 @@ namespace lecs {
 			}
 
 			ECS& m_ecs;
-			int32_t m_entity_count;
+			uint32_t m_entity_count;
 			EntityIndex m_entity_index;
 			ComponentMask m_mask;
 			bool m_all{ false };
