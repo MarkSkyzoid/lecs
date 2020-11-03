@@ -5,6 +5,9 @@
 // LICENSE: See end of file for license information
 //
 // USAGE:
+// FIRST THING:
+// #define LECS_IMPLEMENTATION in a single .cpp file!
+//
 // Components are simple structs eg.:
 //	struct Transform {
 //		float position[3];
@@ -375,8 +378,9 @@ namespace lecs {
 }
 
 // Inline definitions file
-#if defined(LECS_IMPLEMENTATION)
 #include "lecs.inl"
+#if defined(LECS_IMPLEMENTATION)
+#include "lecs.cpp"
 #endif // defined(LECS_IMPLEMENTATION)
 
 //MIT License

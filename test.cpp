@@ -3,6 +3,7 @@
 
 constexpr size_t _10M = 10'000'000L;
 #define LECS_MAX_ENTITIES _10M
+#define LECS_IMPLEMENTATION
 #include "lecs/lecs.hpp"
 
 struct TransformComponent {
