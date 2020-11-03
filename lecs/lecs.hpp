@@ -88,7 +88,6 @@ namespace lecs {
 	private:
 		static IDType counter;
 	};
-	ComponentID::IDType ComponentID::counter = 0;
 
 	// CONFIGURATION
 	const int32_t MAX_COMPONENTS = LECS_MAX_COMPONENTS;
@@ -126,7 +125,6 @@ namespace lecs {
 
 		static const Entity Invalid;
 	};
-	const Entity Entity::Invalid = { Entity::INVALID_INDEX, 0 };
 
 	using ComponentMask = std::bitset<MAX_COMPONENTS>;
 
@@ -377,7 +375,9 @@ namespace lecs {
 }
 
 // Inline definitions file
+#if defined(LECS_IMPLEMENTATION)
 #include "lecs.inl"
+#endif // defined(LECS_IMPLEMENTATION)
 
 //MIT License
 //

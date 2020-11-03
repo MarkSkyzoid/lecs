@@ -4,7 +4,12 @@
 //
 // LICENSE: See end of file for license information
 //
+
+lecs::ComponentID::IDType lecs::ComponentID::counter = 0;
+
 //Entity
+const lecs::Entity Entity::Invalid = { Entity::INVALID_INDEX, 0 };
+
 lecs::Entity::Entity(EntityIndex index, EntityGeneration generation) {
 	id = (static_cast<IDType>(generation) << 32) | static_cast<IDType>(index);
 }
