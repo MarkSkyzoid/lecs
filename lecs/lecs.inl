@@ -59,6 +59,12 @@ T* lecs::ECS::get_component(Entity entity) {
 	return &component_array.get_data_from_entity_index(entity.get_index());
 }
 
+template<typename T> const T* lecs::ECS::get_component(Entity entity) const
+{
+	return get_component(entity);
+}
+
+
 template <typename T>
 lecs::ComponentArray<T>
 & lecs::ECS::get_component_array_by_component_id(ComponentID::IDType component_id) {

@@ -193,6 +193,7 @@ namespace lecs {
 		// If there is no component of this type, returns a nullptr
 		template <typename T>
 		T* get_component(Entity entity);
+		template <typename T> const T* get_component(Entity entity) const;
 
 		// Unsafe as it doesn't check if the entity is valid.
 		ComponentMask get_component_mask_from_index(EntityIndex entity_index);
