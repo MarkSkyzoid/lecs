@@ -11,7 +11,7 @@ LECS (Lightweight Entity Component System) is a simple, lightweight and header o
 - Call systems from wherever you want in any order you like!
 
 ## 
-Also check [Leviathan (Lightweight Event System)](https://github.com/MarkSkyzoid/leviathan)!
+Also check [Sakura (WIP Game Engine using Lecs)](https://github.com/MarkSkyzoid/lecs) and [Leviathan (Lightweight Event System)](https://github.com/MarkSkyzoid/leviathan)!
 
 ## Installation
 You can download the whole repo and copy the contents of the 'lecs' folder into your project's include directories. <br>
